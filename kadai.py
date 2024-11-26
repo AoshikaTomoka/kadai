@@ -97,6 +97,7 @@ class CalculatorApp(ft.Container):
                         ActionButton(text="=", button_clicked=self.button_clicked),
                     ]
                 ),
+                # Scientific Buttons in a horizontal row
                 ft.Row(
                     controls=[
                         ScientificButton(
@@ -114,7 +115,8 @@ class CalculatorApp(ft.Container):
                         ScientificButton(
                             text="10^x", button_clicked=self.button_clicked
                         ),
-                    ]
+                    ],
+                    alignment="center",  # Optional: Center align the buttons
                 ),
             ]
         )
