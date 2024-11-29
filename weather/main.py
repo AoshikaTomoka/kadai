@@ -1,20 +1,6 @@
 import flet as ft
 import requests
 
-URL = "http://www.jma.go.jp/bosai/common/const/area.json"
-
-def main(page: ft.Page):
-    page.add(ft.SafeArea(ft.Text("Hello, Flet!")))
-    data_json = requests.get(URL).json()
-
-
-
-ft.app(main)
-
-
-import flet as ft
-import requests
-
 # API URL
 URL = "http://www.jma.go.jp/bosai/common/const/area.json"
 
