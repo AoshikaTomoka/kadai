@@ -4,12 +4,16 @@ import requests
 # API URL
 URL = "http://www.jma.go.jp/bosai/common/const/area.json"
 
+#ダークモードとライトモードに対応
+#ダークモードの場合は色を反転
+
 def main(page: ft.Page):
-    page.title = "天気予報アプリ"
+    page.title = "天気予報"
     page.scroll = "auto"  # スクロール対応
 
-    # 初期メッセージ
-    page.add(ft.Text("天気予報の地域情報を取得中...", size=20))
+    # 天気予報というタイトルを表示
+    page.add(ft.Text("天気予報", size=30, weight="bold", background_color=ft.colors.LIGHT_BLUE_50))
+    page.add(ft.Text("天気予報の地域情報", size=20))
 
     try:
         # JSONデータの取得
@@ -60,7 +64,7 @@ def main(page: ft.Page):
                 [
                     ft.Container(
                         content=ft.Column(
-                            [ft.Text("地域リスト", size=20, weight="bold"), region_list],
+                            [ft.Text("地域一覧", size=20, weight="bold"), region_list],
                             spacing=10,
                         ),
                         width=300,
