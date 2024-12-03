@@ -12,7 +12,7 @@ def main(page: ft.Page):
     page.scroll = "auto"  # スクロール対応
 
     # 天気予報というタイトルを表示
-    page.add(ft.Text("天気予報", size=30, weight="bold", background_color=ft.colors.LIGHT_BLUE_50))
+    page.add(ft.Text("天気予報", size=30, weight="bold", color=ft.colors.BLUE_900))
     page.add(ft.Text("天気予報の地域情報", size=20))
 
     try:
