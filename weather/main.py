@@ -84,6 +84,6 @@ def main(page: ft.Page):
             )
         )
     except requests.RequestException as e:
-        page.add(ft.Text(f"データ取得エラー: {e}", color=ft.colors.RED, size=20))
+        page.add(ft.Text(f"エラー: {e}", color=ft.colors.RED, size=20))
 
 ft.app(target=main)
