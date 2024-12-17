@@ -1,17 +1,62 @@
 import flet as ft
 import requests
+import sqlite3
 
 # API URL
 URL = "http://www.jma.go.jp/bosai/common/const/area.json"
+DB_FILE = "weather_forecast.db"
 
-#ダークモードとライトモードに対応
-#ダークモードの場合は色を反転
+# SQLiteデータベースの初期化
+def init_db():
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    # テーブル作成
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS regions (
+            id TEXT PRIMARY KEY,
+            name TEXT,
+            en_name TEXT,
+            office_name TEXT,
+            children TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+# 地域情報をデータベースに保存
+def save_region_to_db(region_id, name, en_name, office_name, children):
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    # 挿入または更新
+    cursor.execute('''
+        INSERT INTO regions (id, name, en_name, office_name, children)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+            name=excluded.name,
+            en_name=excluded.en_name,
+            office_name=excluded.office_name,
+            children=excluded.children
+    ''', (region_id, name, en_name, office_name, children))
+    conn.commit()
+    conn.close()
+
+# 地域情報をデータベースから取得
+def get_regions_from_db():
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM regions")
+    regions = cursor.fetchall()
+    conn.close()
+    return regions
 
 def main(page: ft.Page):
     page.title = "天気予報"
     page.scroll = "auto"  # スクロール対応
 
-    # 天気予報というタイトルを表示
+    # 初期化
+    init_db()
+
+    # タイトル表示
     page.add(ft.Text("天気予報", size=30, weight="bold", color=ft.colors.BLUE_900))
     page.add(ft.Text("天気予報の地域情報", size=20))
 
@@ -21,37 +66,45 @@ def main(page: ft.Page):
         response.raise_for_status()  # HTTPエラーをチェック
         data_json = response.json()
 
-        # 地域データを取得
+        # 地域データを取得しデータベースに保存
         centers = data_json.get("centers", {})
+        for center_id, center_info in centers.items():
+            name = center_info.get("name", "不明")
+            en_name = center_info.get("enName", "不明")
+            office_name = center_info.get("officeName", "不明")
+            children = ",".join(center_info.get("children", []))
+            save_region_to_db(center_id, name, en_name, office_name, children)
 
         # 表示を初期化
         def show_region_details(center_id):
             # 選択された地域の詳細を表示
-            region_info = centers.get(center_id, {})
-            name = region_info.get("name", "不明")
-            en_name = region_info.get("enName", "不明")
-            office_name = region_info.get("officeName", "不明")
-            children = region_info.get("children", [])
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM regions WHERE id = ?", (center_id,))
+            region_info = cursor.fetchone()
+            conn.close()
 
-            # 詳細情報を表示
-            details_section.controls = [
-                ft.Text(f"地域 ID: {center_id}", weight="bold", size=18),
-                ft.Text(f"地域名 (JP): {name}"),
-                ft.Text(f"地域名 (EN): {en_name}"),
-                ft.Text(f"気象台: {office_name}"),
-                ft.Text(f"子地域 IDs: {', '.join(children)}"),
-            ]
+            if region_info:
+                details_section.controls = [
+                    ft.Text(f"地域 ID: {region_info[0]}", weight="bold", size=18),
+                    ft.Text(f"地域名 (JP): {region_info[1]}"),
+                    ft.Text(f"地域名 (EN): {region_info[2]}"),
+                    ft.Text(f"気象台: {region_info[3]}"),
+                    ft.Text(f"子地域 IDs: {region_info[4]}"),
+                ]
+            else:
+                details_section.controls = [ft.Text("地域情報が見つかりません")]
             page.update()
 
         # 地域リストの表示
         region_list = ft.Column(spacing=5)
-        for center_id, center_info in centers.items():
-            region_name = center_info.get("name", "不明")
+        regions = get_regions_from_db()
+        for region in regions:
             region_list.controls.append(
                 ft.ListTile(
-                    title=ft.Text(region_name),
-                    subtitle=ft.Text(f"ID: {center_id}"),
-                    on_click=lambda e, center_id=center_id: show_region_details(center_id),
+                    title=ft.Text(region[1]),  # 日本語名
+                    subtitle=ft.Text(f"ID: {region[0]}"),
+                    on_click=lambda e, center_id=region[0]: show_region_details(center_id)
                 )
             )
 
